@@ -1,0 +1,312 @@
+import math
+import numpy as np
+
+
+class Scalar:
+    """Класс для скалярных величин"""
+
+    def __init__(self, value):
+        self.value = value
+
+    def __add__(self, other):
+        """Сумма a + b"""
+        return Scalar(self.value + other.value)
+
+    def sin(self):
+        """Синус угла в градусах"""
+        return Scalar(math.sin(math.radians(self.value)))
+
+    def cos(self):
+        """Косинус угла в градусах"""
+        return Scalar(math.cos(math.radians(self.value)))
+
+    def tan(self):
+        """Тангенс угла в градусах"""
+        return Scalar(math.tan(math.radians(self.value)))
+
+    def __str__(self):
+        return f"{self.value:.4f}"
+
+
+class Vector:
+    """Класс для векторов"""
+
+    def __init__(self, coordinates):
+        self.coordinates = coordinates
+        self.dim = len(coordinates)
+
+    def magnitude(self):
+        """Вычисление длины вектора"""
+        sum_squares = 0
+        for coord in self.coordinates:
+            sum_squares += coord ** 2
+        return Scalar(math.sqrt(sum_squares))
+
+    def cross_product(self, other):
+        """Векторное произведение (только для трехмерных векторов)"""
+        if self.dim != 3 or other.dim != 3:
+            raise ValueError("Векторы должны быть трехмерными!")
+
+        a = self.coordinates
+        b = other.coordinates
+
+        result = [
+            a[1] * b[2] - a[2] * b[1],
+            a[2] * b[0] - a[0] * b[2],
+            a[0] * b[1] - a[1] * b[0]
+        ]
+        return Vector(result)
+
+    def __str__(self):
+        return "[" + " ".join([f"{coord:.4f}" for coord in self.coordinates]) + "]"
+
+
+class Matrix:
+    """Класс для матриц"""
+
+    def __init__(self, data):
+        self.data = data
+        self.rows = len(data)
+        self.cols = len(data[0]) if data else 0
+
+    def trace(self):
+        """Вычисление следа матрицы"""
+        if not self.is_square():
+            raise ValueError("Матрица должна быть квадратной!")
+
+        trace_sum = 0
+        for i in range(self.rows):
+            trace_sum += self.data[i][i]
+        return Scalar(trace_sum)
+
+    def determinant(self):
+        """Вычисление определителя матрицы"""
+        if not self.is_square():
+            raise ValueError("Матрица должна быть квадратной!")
+
+        return Scalar(np.linalg.det(self.data))
+
+    def inverse(self):
+        """Вычисление обратной матрицы"""
+        if not self.is_square():
+            raise ValueError("Матрица должна быть квадратной!")
+
+        det = np.linalg.det(self.data)
+        if abs(det) < 1e-10:
+            raise ValueError("Матрица вырожденная, обратной не существует!")
+
+        inverse_data = np.linalg.inv(self.data)
+        return Matrix(inverse_data.tolist())
+
+    def is_square(self):
+        """Проверка, является ли матрица квадратной"""
+        return self.rows == self.cols
+
+    def __str__(self):
+        result = []
+        for row in self.data:
+            formatted_row = [f"{x:.4f}" if isinstance(x, float) else str(x) for x in row]
+            result.append(" ".join(formatted_row))
+        return "\n".join(result)
+
+
+# Функции ввода данных
+def input_scalar(prompt):
+    """Ввод скаляра"""
+    while True:
+        try:
+            value = float(input(prompt))
+            return Scalar(value)
+        except ValueError:
+            print("Ошибка! Введите число.")
+
+
+def input_vector(prompt, required_dim=None):
+    """Ввод вектора"""
+    while True:
+        try:
+            input_str = input(prompt)
+            coordinates = [float(x) for x in input_str.split()]
+
+            if required_dim and len(coordinates) != required_dim:
+                print(f"Ошибка! Введите {required_dim} числа через пробел.")
+                continue
+
+            return Vector(coordinates)
+        except ValueError:
+            print("Ошибка! Введите числа через пробел.")
+
+
+def input_matrix(prompt):
+    """Ввод квадратной матрицы"""
+    while True:
+        try:
+            n = int(input(f"{prompt} Введите размерность N (для матрицы N×N): "))
+
+            print(f"Введите матрицу {n}×{n} построчно (числа через пробел):")
+            matrix_data = []
+
+            for i in range(n):
+                row_input = input(f"Строка {i + 1}: ")
+                row = [float(x) for x in row_input.split()]
+
+                if len(row) != n:
+                    print(f"Ошибка! В строке должно быть {n} чисел.")
+                    matrix_data = []
+                    break
+
+                matrix_data.append(row)
+
+            if matrix_data:
+                return Matrix(matrix_data)
+        except ValueError:
+            print("Ошибка! Введите корректные данные.")
+
+
+# Меню и управление
+class CalculatorApp:
+    """Основное приложение калькулятора"""
+
+    def __init__(self):
+        pass
+
+    def display_menu(self):
+        """Отображение главного меню"""
+        print("\n" + "=" * 50)
+        print("КАЛЬКУЛЯТОР")
+        print("=" * 50)
+        print("1. Сумма скаляров (a + b)")
+        print("2. Тригонометрические функции")
+        print("3. Длина вектора")
+        print("4. Векторное произведение")
+        print("5. След и определитель матрицы")
+        print("6. Обратная матрица")
+        print("0. Выход")
+        print("=" * 50)
+
+    def run_sum_scalars(self):
+        """Операция 1: Сумма скаляров"""
+        a = input_scalar("Введите скаляр a: ")
+        b = input_scalar("Введите скаляр b: ")
+
+        print(f"\na = {a}")
+        print(f"b = {b}")
+        print(f"a + b = {a + b}")
+
+    def run_trigonometry(self):
+        """Операция 2: Тригонометрические функции"""
+        angle = input_scalar("Введите угол в градусах: ")
+
+        print(f"\nУгол: {angle}")
+        print(f"sin({angle}°) = {angle.sin()}")
+        print(f"cos({angle}°) = {angle.cos()}")
+        print(f"tan({angle}°) = {angle.tan()}")
+
+        # Проверка тождества
+        sin_val, cos_val = angle.sin().value, angle.cos().value
+        identity = sin_val ** 2 + cos_val ** 2
+        print(f"\nПроверка: sin² + cos² = {identity:.6f}")
+
+    def run_vector_magnitude(self):
+        """Операция 3: Длина вектора"""
+        vector = input_vector("Введите вектор (числа через пробел): ")
+
+        print(f"\nВектор: {vector}")
+        magnitude = vector.magnitude()
+        print(f"Длина вектора: {magnitude}")
+
+    def run_cross_product(self):
+        """Операция 4: Векторное произведение"""
+        print("(только для трехмерных векторов)")
+
+        v1 = input_vector("Введите первый вектор (3 числа через пробел): ", 3)
+        v2 = input_vector("Введите второй вектор (3 числа через пробел): ", 3)
+
+        print(f"\nПервый вектор: {v1}")
+        print(f"Второй вектор: {v2}")
+
+        try:
+            result = v1.cross_product(v2)
+            print(f"Векторное произведение: {result}")
+        except ValueError as e:
+            print(f"Ошибка: {e}")
+
+    def run_matrix_trace_det(self):
+        """Операция 5: След и определитель матрицы"""
+        matrix = input_matrix("")
+
+        print(f"\nМатрица {matrix.rows}×{matrix.cols}:")
+        print(matrix)
+
+        try:
+            trace = matrix.trace()
+            det = matrix.determinant()
+
+            print(f"\nСлед матрицы: {trace}")
+            print(f"Определитель: {det}")
+        except ValueError as e:
+            print(f"Ошибка: {e}")
+
+    def run_matrix_inverse(self):
+        """Операция 6: Обратная матрица"""
+        matrix = input_matrix("")
+
+        print(f"\nИсходная матрица {matrix.rows}×{matrix.cols}:")
+        print(matrix)
+
+        try:
+            inverse_matrix = matrix.inverse()
+            print(f"\nОбратная матрица:")
+            print(inverse_matrix)
+
+            # Проверка умножением
+            original_np = np.array(matrix.data)
+            inverse_np = np.array(inverse_matrix.data)
+            identity_check = np.dot(original_np, inverse_np)
+
+        except ValueError as e:
+            print(f"Ошибка: {e}")
+
+    def run(self):
+        """Основной цикл программы"""
+        while True:
+            self.display_menu()
+
+            try:
+                choice = input("\nВыберите операцию (0-6): ")
+
+                if choice == '0':
+                    print("Выход из программы...")
+                    break
+                elif choice == '1':
+                    self.run_sum_scalars()
+                elif choice == '2':
+                    self.run_trigonometry()
+                elif choice == '3':
+                    self.run_vector_magnitude()
+                elif choice == '4':
+                    self.run_cross_product()
+                elif choice == '5':
+                    self.run_matrix_trace_det()
+                elif choice == '6':
+                    self.run_matrix_inverse()
+                else:
+                    print("Неверный выбор! Введите число от 0 до 6.")
+
+                input("\nНажмите Enter для продолжения...")
+
+            except KeyboardInterrupt:
+                print("\n\nПрограмма прервана пользователем.")
+                break
+            except Exception as e:
+                print(f"\nПроизошла ошибка: {e}")
+                input("\nНажмите Enter для продолжения...")
+
+
+def main():
+    app = CalculatorApp()
+    app.run()
+
+
+if __name__ == "__main__":
+    main()
